@@ -9,8 +9,10 @@ function useScrollInEyes(config, dep) {
     errRemoveListen = false
   } = config
 
+  // 移除的监听，即便effect触发，也需要再次添加监听。优化。
   const isRemoveListener = useRef(false)
 
+  // 已经在执行用户的回调，则不在去执行回调。优化
   let runCallback = false
 
   let scrollWrapDom = null
