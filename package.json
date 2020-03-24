@@ -1,0 +1,23 @@
+{
+  "name": "cc-hooks",
+  "version": "0.0.1",
+  "description": "一些业务中提炼的react hooks，减少重复的工作",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/c690554125/cc-hooks.git"
+  },
+  "keywords": [
+    "react",
+    "hooks"
+  ],
+  "author": "tkgkn",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/c690554125/cc-hooks/issues"
+  },
+  "homepage": "https://github.com/c690554125/cc-hooks#readme"
+}
