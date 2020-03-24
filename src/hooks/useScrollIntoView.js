@@ -1,12 +1,17 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 
-function useScrollIntoView(config, dep) {
+function useScrollInEyes(config, dep) {
   const {
     wrap: scrollWrap,
     target: listenTarget,
-    callback: listenDoWhat,
-    realTarget // 针对列表渲染的，判断真正的列表项容器
+    callback: listenDoWhat, // 提供一个接收解除监听的回调函数
+    realTarget, // 针对列表渲染的，判断真正的列表项容器
+    errRemoveListen = false
   } = config
+
+  const isRemoveListener = useRef(false)
+
+  let runCallback = false
 
   let scrollWrapDom = null
   let listenTargetDom = null
@@ -15,14 +20,38 @@ function useScrollIntoView(config, dep) {
   let listenTargetDomOffsetTop = 0
 
   const scrollInEyesCallback = useCallback(event => {
-    // 判断是否滚动到用户可视区域
+    if (runCallback) {
+      return
+    }
+    // 获取滚动距离
     const scrollTop = event.target.scrollTop
+    // 元素距离容器顶部距离差 < 容器高度 则进入容器可视区域。
     if (listenTargetDomOffsetTop - scrollTop <= scrollWrapDomHeight) {
-      // 隐藏的项等到其display = block再执行
+      // 滚动期间如果元素距离顶部距离不为0，则可以执行回调
       if (listenTargetDomOffsetTop !== 0) {
-        listenDoWhat()
-        // 执行完就解除监听
-        scrollWrapDom.removeEventListener('scroll', scrollInEyesCallback)
+        // 执行回调，拿到回调的返回值。普通函数将清理函数扔给调用方来手动使用。
+        const callbackRes = listenDoWhat(removeListen)
+        runCallback = true
+        // 如果是Promise的话，在promise resolved状态来执行。
+        if (
+          Object.prototype.toString.call(callbackRes) === '[object Promise]'
+        ) {
+          callbackRes
+            .then(res => {
+              removeListen()
+              runCallback = false
+            })
+            .catch(er => {
+              if (errRemoveListen) {
+                removeListen()
+              }
+              runCallback = false
+            })
+        } else {
+          console.error(
+            '传递给useScrollIntoView的callback需要是返回一个promise，否则滚动监听不会取消'
+          )
+        }
       } else {
         // 距离容器为0的话，判断元素是否还是display=none
         const isNone = getComputedStyle(listenTargetDom).display === 'none'
@@ -46,7 +75,17 @@ function useScrollIntoView(config, dep) {
     return find(dom)
   }, [])
 
+  const removeListen = useCallback(() => {
+    scrollWrapDom.removeEventListener('scroll', scrollInEyesCallback)
+    isRemoveListener.current = true
+  }, [])
+
   useEffect(() => {
+    // 如果已经是执行过callback，解除了监听。即便dep有变化，也不需要重新监听。
+    if (isRemoveListener.current) {
+      return
+    }
+
     if (!scrollWrap || !listenTarget) {
       return
     }
@@ -91,4 +130,4 @@ function useScrollIntoView(config, dep) {
   }, [...dep])
 }
 
-export default useScrollIntoView
+export default useScrollInEyes
